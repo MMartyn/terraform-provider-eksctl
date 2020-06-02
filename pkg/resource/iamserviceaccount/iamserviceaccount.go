@@ -21,6 +21,7 @@ func Resource() *schema.Resource {
 			args := []string{
 				"create",
 				"iamserviceaccount",
+				"--approve",
 				"--cluster", a.Cluster,
 				"--name", a.Name,
 				"--namespace", a.Namespace,
@@ -79,7 +80,7 @@ func Resource() *schema.Resource {
 				ForceNew: true,
 			},
 			KeyAttachPolicyARNs: {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -106,7 +107,15 @@ func ReadIAMServiceAccount(d *schema.ResourceData) *IAMServiceAccount {
 	a.Namespace = d.Get(KeyNamespace).(string)
 	a.Name = d.Get(KeyName).(string)
 	a.Cluster = d.Get(KeyCluster).(string)
-	a.AttachPolicyARNs = d.Get(KeyAttachPolicyARNs).([]string)
 	a.OverrideExistingServiceAccounts = d.Get(KeyOverrideExistingServiceAccounts).(bool)
+
+	var policyARNs []string
+	if v := d.Get(KeyAttachPolicyARNs).(*schema.Set); v.Len() > 0 {
+		for _, v := range v.List() {
+			policyARNs = append(policyARNs, v.(string))
+		}
+	}
+	a.AttachPolicyARNs = policyARNs
+
 	return &a
 }

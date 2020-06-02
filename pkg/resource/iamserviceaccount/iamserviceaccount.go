@@ -1,6 +1,7 @@
 package iamserviceaccount
 
 import (
+	"fmt"
 	"os/exec"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -39,7 +40,12 @@ func Resource() *schema.Resource {
 				)
 			}
 
-			return resource.Create(exec.Command("eksctl", args...), d, "")
+			if err := resource.Create(exec.Command("eksctl", args...), d, ""); err != nil {
+				return err
+			} else {
+				d.SetId(fmt.Sprintf("%s-%s", a.Namespace, a.Name))
+				return nil
+			}
 		},
 		Delete: func(d *schema.ResourceData, meta interface{}) error {
 			a := ReadIAMServiceAccount(d)
@@ -52,7 +58,12 @@ func Resource() *schema.Resource {
 				"--namespace", a.Namespace,
 			}
 
-			return resource.Delete(exec.Command("eksctl", args...), d)
+			if err := resource.Delete(exec.Command("eksctl", args...), d); err != nil {
+				return err
+			} else {
+				d.SetId("")
+				return nil
+			}
 		},
 		Read: func(d *schema.ResourceData, meta interface{}) error {
 			return nil

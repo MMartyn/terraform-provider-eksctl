@@ -1,16 +1,17 @@
 package iamserviceaccount
 
 import (
+	"os/exec"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/mumoshu/terraform-provider-eksctl/pkg/resource"
-	"os/exec"
 )
 
 const KeyNamespace = "namespace"
 const KeyName = "name"
 const KeyCluster = "cluster"
 const KeyOverrideExistingServiceAccounts = "override_existing_serviceaccounts"
-const KeyAttachPolicyARN = "attach_policy_arn"
+const KeyAttachPolicyARNs = "attach_policy_arns"
 
 func Resource() *schema.Resource {
 	return &schema.Resource{
@@ -31,9 +32,9 @@ func Resource() *schema.Resource {
 				)
 			}
 
-			if a.AttachPolicyARN != "" {
+			for _, policyARN := range a.AttachPolicyARNs {
 				args = append(args,
-					"--attach-policy-arn", a.AttachPolicyARN,
+					"--attach-policy-arn", policyARN,
 				)
 			}
 
@@ -77,10 +78,11 @@ func Resource() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			KeyAttachPolicyARN: {
-				Type:     schema.TypeString,
+			KeyAttachPolicyARNs: {
+				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			resource.KeyOutput: {
 				Type:     schema.TypeString,
@@ -94,7 +96,7 @@ type IAMServiceAccount struct {
 	Name                            string
 	Namespace                       string
 	Cluster                         string
-	AttachPolicyARN                 string
+	AttachPolicyARNs                []string
 	OverrideExistingServiceAccounts bool
 	Output                          string
 }
@@ -104,8 +106,7 @@ func ReadIAMServiceAccount(d *schema.ResourceData) *IAMServiceAccount {
 	a.Namespace = d.Get(KeyNamespace).(string)
 	a.Name = d.Get(KeyName).(string)
 	a.Cluster = d.Get(KeyCluster).(string)
-	a.AttachPolicyARN = d.Get(KeyAttachPolicyARN).(string)
+	a.AttachPolicyARNs = d.Get(KeyAttachPolicyARNs).([]string)
 	a.OverrideExistingServiceAccounts = d.Get(KeyOverrideExistingServiceAccounts).(bool)
 	return &a
 }
-
